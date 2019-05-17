@@ -1,10 +1,11 @@
 A command line version of the ESPTouch SmartConfig App (https://github.com/EspressifApp/EsptouchForAndroid).
-Tested on Raspberry.
-Tested on Windows.
-Implemented but not tested for hidden Wifis.
+* Tested on Raspberry.
+* Tested on Windows.
+* Implemented but not tested for hidden Wifis.
 
 Build:
-Build via `make`, then a subdirectory bin appears with the executeable.
+
+Build via `make`, then a subdirectory `bin` appears with the executeable `smartcfg`.
 
 Usage:
 
