@@ -1,0 +1,103 @@
+// not tested and not complete ...
+
+#define USE_TI_SMARTCFG	0
+
+#if (USE_TI_SMARTCFG == 1)
+
+// http://depletionregion.blogspot.com/2013/10/cc3000-smart-config-transmitting-ssid.html
+
+#define SMARTCFG_TAG_SSID	1399
+#define SMARTCFG_TAG_PASS	1459
+
+#define SMARTCFG_L			28
+#define SMARTCFG_C			593
+
+#define LONIB(X)			((X) & 0x0f)
+#define HINIB(X)			LONIB((X) >> 4)
+
+int ti_smartcfg_add_separator(int* dst)
+{
+    *dst++ = 3;
+    *dst++ = 23;
+    return 2;
+}
+
+int ti_smartcfg_encodestr(int* dst, const char* src, int tag)
+{
+	int n = 0;
+
+	dst[n++] = tag;
+	dst[n++] = strlen(src) + SMARTCFG_L;
+
+	//n += ti_smartcfg_add_separator(dst + n);
+
+	char prv = 0x00;
+	int i = 0;
+	while (*src)
+	{
+		char nib, c = *src++;
+
+        nib = HINIB(c);
+        dst[n++] = (((prv ^ i) << 4) | nib) + SMARTCFG_C;
+        i++;
+        i &= 0xf;
+        prv = nib;
+        //n += ti_smartcfg_add_separator(dst + n);
+
+        nib = LONIB(c);
+        dst[n++] = (((prv ^ i) << 4) | nib) + SMARTCFG_C;
+        i++;
+        i &= 0xf;
+        prv = nib;
+        //n += ti_smartcfg_add_separator(dst + n);
+	}
+
+    //n += ti_smartcfg_add_separator(dst + n);
+
+	return n;
+}
+
+bool smartcfg_ftc20(const char* ssid, const char* pass)
+{
+	#define SSID_MAX	64
+	#define PASS_MAX	32
+
+    #define MTU_SIZE	1500
+
+    #define LENS_MAX	(4 + (3 * SSID_MAX) + 4 + (3 * PASS_MAX))
+
+	int lens[LENS_MAX];
+	int n = 0;
+
+    for (int j=0; j<10; j++)
+    { n += ti_smartcfg_add_separator(lens + n); }
+
+	n += ti_smartcfg_encodestr(lens + n, ssid, SMARTCFG_TAG_SSID);
+	n += ti_smartcfg_encodestr(lens + n, pass, SMARTCFG_TAG_PASS);
+
+    for (int i=0; i<n; i++)
+    {
+        printf("[%02u] = %d \n", i, lens[i]);
+    }
+
+    int cnt = 0;
+    char dummy[MTU_SIZE];
+    memset(dummy, 0xaa, sizeof(dummy));
+
+    while (run)
+    {
+        for (int i=0; i<n; i++)
+        {
+            send_sized(lens[i]);
+        }
+
+        cnt++;
+        printf("Sends: %u    \r", cnt);
+
+        sleep_ms(100);
+
+        // todo: check for mDNS incomming ack, using recvfrom on an nonblocking udp-bound socket
+    }
+}
+
+#endif
