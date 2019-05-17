@@ -14,9 +14,9 @@ pi@raspiz1% ./bin/smartcfg "MyWifName" "9c:c7:a6:9c:f7:84" "MySecretPassword" `h
 smartcfg_init ...
 socket bound to: 0.0.0.0:18266
 Sending Packets: GDGDGDG
-recvd 11 bytes from 192.168.0.99.
-- IP:  160.32.166.166
-- MAC: e5:4:c0:a8:0:63
+recvd 11 bytes from 192.168.0.145.
+- IP:  192.168.0.145
+- MAC: a0:20:a6:14:e5:04
 D
 smartcfg_deinit ...
 
