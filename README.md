@@ -27,7 +27,6 @@ Example:
 
 ```
 pi@raspiz1% ./bin/smartcfg --password "34234673423423"
-./bin/smartcfg: done
 ./bin/smartcfg, ver: May 19 2019/15:20:49 ...
 using local interface wlan0 address 192.168.0.141
 using ssid MyWifiName (9c:c7:a6:9c:f7:84)
