@@ -40,12 +40,12 @@ void onsignal(int signum)
 void usage(const char* progname)
 {
 	printf("Usage: %s ...\n", progname);
-	printf("  -essid ESSID \n");
-	printf("  -bssid BSSID\n");
-	printf("  -password PASSWORD\n");
-	printf("  [ (-interface INTERFACENAME) | (-address LOCALADDRESS) ]\n");
-	printf("  [ (-timeout TIMEOUT) | -infinite ]\n");
-	printf("  [-hidden | -visible] \n");
+	printf("  --essid ESSID \n");
+	printf("  --bssid BSSID\n");
+	printf("  --password PASSWORD\n");
+	printf("  [ (--interface INTERFACENAME) | (--address LOCALADDRESS) ]\n");
+	printf("  [ (--timeout TIMEOUT) | --infinite ]\n");
+	printf("  [--hidden | --visible] \n");
 	
 	//dump_own_addrs();
 	printf("Version: " COMPILE_TIMESTAMP " \n");
