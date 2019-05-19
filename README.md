@@ -1,4 +1,3 @@
-
 __About:__
 
 This is a command line version of the ESPTouch SmartConfig App (https://github.com/EspressifApp/EsptouchForAndroid).
