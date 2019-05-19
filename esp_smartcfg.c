@@ -1,10 +1,13 @@
 #include "esp_smartcfg.h"
 
-#include "sockets.h"
-
-#if 1 // helpers
+#define TOTAL_TIMEOUT_MS			45000
+#define DEBUG_ENCODING				0
 
 #include <stdint.h>
+#include <time.h>
+#include <string.h>
+
+#include "sockets.h"
 
 #if (defined _WIN32)
 	#include <windows.h>
@@ -12,9 +15,7 @@
 	#define delay_ms(MS)	Sleep(MS)
 #elif (defined _LINUX)
 	#define delay_ms(MS)	usleep(1000 * MS)
-
 	#define _POSIX_C_SOURCE 200809L
-	#include <time.h>
 
 	unsigned long timestamp_ms(void)
 	{
@@ -23,7 +24,6 @@
 		//return clock_gettime(CLOCK_MONOTONIC_RAW, &tp) ? 0 :
 		(unsigned long)((tp.tv_sec * 1000) + (tp.tv_nsec / 1000000));
 	}
-
 #endif
 
 uint8_t _crc8_update(uint8_t crc, uint8_t data)
@@ -62,16 +62,6 @@ uint8_t _xor_update_buf(uint8_t xor, const uint8_t* data, int len)
 	return xor;
 }
 
-#define LONIB(X)			((X) & 0x0f)
-#define HINIB(X)			LONIB((X) >> 4)
-#define MKBYTE(H, L)		((H << 4) | ((L) & 0x0f))
-#define MKINT16(H, L)		((H << 8) | ((L) & 0xff))
-
-#endif // helpers
-
-#define TOTAL_TIMEOUT_MS			45000
-#define DEBUG_ENODING				0
-
 // dont change these:
 #define PACKET_MAX					1500
 #define DATUMCODE_MAX				105
@@ -84,20 +74,10 @@ uint8_t _xor_update_buf(uint8_t xor, const uint8_t* data, int len)
 #define SMARTCFG_UDP_TX_PORT		7001
 #define SMARTCFG_UDP_RX_PORT		18266
 
-extern volatile bool run;
-
-SOCKET txsock = INVALID_SOCKET;
-sockaddr_in_t txaddr;
-char packet[PACKET_MAX];
-
-SOCKET rxsock = INVALID_SOCKET;
-
-int send_sized(int size)
-{
-	int n = sendto(txsock, packet, size, 0, (sockaddr_t*)(&txaddr), sizeof(sockaddr_in_t));
-}
-
-#include <string.h>
+#define LONIB(X)					((X) & 0x0f)
+#define HINIB(X)					LONIB((X) >> 4)
+#define MKBYTE(H, L)				((H << 4) | ((L) & 0x0f))
+#define MKINT16(H, L)				((H << 8) | ((L) & 0xff))
 
 int esp_tricode(uint8_t data, uint8_t index, uint16_t* tricode, const char* comment)
 {
@@ -109,7 +89,7 @@ int esp_tricode(uint8_t data, uint8_t index, uint16_t* tricode, const char* comm
 	tricode[1] = MKINT16(0x01, index);
 	tricode[2] = MKINT16(0x00, MKBYTE(LONIB(crc), LONIB(data)));
 
-	#if (DEBUG_ENODING)
+	#if (DEBUG_ENCODING)
 	printf("TriCode: data=%3d (0x%02x) index=%3d (0x%02x) %-10s -> ", data, data, index, index, comment);
 	printf("%04x, %04x, %04x; \n", tricode[0], tricode[1], tricode[2]);
 	#endif
@@ -126,7 +106,7 @@ int esp_make_datumcode(
 	bool ishidden
 )
 {
-	#if (DEBUG_ENODING)
+	#if (DEBUG_ENCODING)
 	printf("------------------------------\n");
 	printf("ESSID    = \"%s\"\n", essid_str);
 	printf("BSSID    = %s\n", bssid_str);
@@ -171,7 +151,7 @@ int esp_make_datumcode(
 	total_xor = _xor_update_buf(total_xor, passwd_str, passwd_len);
 	total_xor = _xor_update_buf(total_xor, essid_str, essid_len);	
 
-	#if (DEBUG_ENODING)
+	#if (DEBUG_ENCODING)
 	printf("essid_crc = 0x%02x (%3d)\n", essid_crc, essid_crc);
 	printf("bssid_crc  = 0x%02x (%3d)\n", bssid_crc, bssid_crc);
 	printf("essid_len = 0x%02x (%3d)\n", essid_len, essid_len);
@@ -214,12 +194,23 @@ int esp_make_datumcode(
 		n += esp_tricode(bssid_bytes[i], t++, datumcode + n, "bssid");
 	}
 
-	#if (DEBUG_ENODING)
+	#if (DEBUG_ENCODING)
 	printf("dcode_len  = %d\n", n);
 	printf("------------------------------\n");
 	#endif
 
 	return n;
+}
+
+extern volatile bool run;
+SOCKET txsock = INVALID_SOCKET;
+SOCKET rxsock = INVALID_SOCKET;
+sockaddr_in_t txaddr;
+char packet[PACKET_MAX];
+
+int send_sized(int size)
+{
+	int n = sendto(txsock, packet, size, 0, (sockaddr_t*)(&txaddr), sizeof(sockaddr_in_t));
 }
 
 bool esp_peek_reply(void)
@@ -307,7 +298,6 @@ bool esp_smartcfg_init(void)
 	rxsock = udpsock();
 	sockaddr_in_t localaddr;
 	setup_addr_in_any(&localaddr, SMARTCFG_UDP_RX_PORT);
-	
 
 	if (bind(rxsock, (struct sockaddr *) &localaddr, sizeof(localaddr)) != 0)
 	{
@@ -316,7 +306,7 @@ bool esp_smartcfg_init(void)
 	}
 	else
 	{
-		printf("receiving socket bound to: %s:%u\n", inet_ntoa(localaddr.sin_addr), ntohs(localaddr.sin_port));
+		printf("receiver-socket bound to: %s:%u\n", inet_ntoa(localaddr.sin_addr), ntohs(localaddr.sin_port));
 	}
 
 	sockopt_blocking(rxsock, false);

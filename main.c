@@ -1,22 +1,4 @@
-﻿/*
-
-usage example:
-
-pi@raspiz1% ./bin/smartcfg "MyWifName" "9c:c7:a6:9c:f7:84" "MySecretPassword" `hostname -I`
-./bin/smartcfg begin...
-smartcfg_init ...
-socket bound to: 0.0.0.0:18266
-Sending Packets: GDGDGDG
-recvd 11 bytes from 192.168.0.145.
-- IP:  192.168.0.145
-- MAC: a0:20:a6:14:e5:04
-D
-smartcfg_deinit ...
-
-./bin/smartcfg end.
-*/
-
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -43,18 +25,15 @@ void usage(const char* progname)
 #if (defined _WIN32)
 	printf("  --essid ESSID\n");
 	printf("  --bssid BSSID\n");
-	printf("  --password PASSWORD\n");
 	printf("  --address LOCALADDRESS)\n");
-	printf("  [ (--timeout TIMEOUT) | --infinite ]\n");
-	printf("  [--hidden | --visible] \n");
 #elif (defined _LINUX)
 	printf("  [ --essid ESSID ]\n");
 	printf("  [ --bssid BSSID ]\n");
-	printf("  --password PASSWORD\n");
 	printf("  [ (--interface INTERFACENAME) | (--address LOCALADDRESS) ]\n");
-	printf("  [ (--timeout TIMEOUT) | --infinite ]\n");
-	printf("  [--hidden | --visible ] \n");	
 #endif
+	printf("  --password PASSWORD\n");
+	printf("  [ (--timeout TIMEOUT) | --infinite ]\n");
+	printf("  [ --hidden | --visible ] \n");	
 
 	//dump_own_addrs();
 	printf("Version: " COMPILE_TIMESTAMP " \n");
