@@ -11,19 +11,22 @@ Usage:
 
 ```
 smartcfg ...
-  [-essid ESSID]
-  [-bssid BSSID]
-  -password PASSWORD
-  [ (-interface INTERFACENAME) | (-address LOCALADDRESS) ]
-  [ (-timeout TIMEOUT) | -infinite ]
+  [--essid ESSID]
+  [--bssid BSSID]
+  --password PASSWORD
+  [ (--interface INTERFACENAME) | (--address LOCALADDRESS) ]
+  [ (--timeout TIMEOUT) | --infinite ]
   [-hidden | -visible]
 
 ```
 
-if `-essid`, `-bssid` and `-interface` is ommitted, then the locally connected Wifi is used.
+if `--essid`, `--bssid` and `--interface` is ommitted, then the locally connected Wifi is used.
+The `--password` must always be given.
+
+Example:
 
 ```
-pi@raspiz1:foo/raspi/smartcfg (1) % make && ./bin/smartcfg -p "34234673423423"
+pi@raspiz1% ./bin/smartcfg --password "34234673423423"
 ./bin/smartcfg: done
 ./bin/smartcfg, ver: May 19 2019/15:20:49 ...
 using local interface wlan0 address 192.168.0.141
