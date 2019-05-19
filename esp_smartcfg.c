@@ -109,10 +109,10 @@ int make_datumcode(
 	#if (DEBUG_ENCODING)
 	printf("------------------------------\n");
 	printf("ESSID    = \"%s\"\n", essid_str);
-	printf("BSSID    = %s\n", bssid_str);
+	printf("BSSID    = %s\n",     bssid_str);
 	printf("Password = \"%s\"\n", passwd_str);
-	printf("Ip-Addr  = %s\n", ownaddr_str);
-	printf("Hidden   = %s\n", ishidden ? "yes" : "no");
+	printf("Ip-Addr  = %s\n",     ownaddr_str);
+	printf("Hidden   = %s\n",     ishidden ? "yes" : "no");
 	#endif
 
 	uint8_t total_xor;
@@ -152,12 +152,12 @@ int make_datumcode(
 	total_xor = _xor_update_buf(total_xor, essid_str, essid_len);	
 
 	#if (DEBUG_ENCODING)
-	printf("essid_crc = 0x%02x (%3d)\n", essid_crc, essid_crc);
-	printf("bssid_crc  = 0x%02x (%3d)\n", bssid_crc, bssid_crc);
-	printf("essid_len = 0x%02x (%3d)\n", essid_len, essid_len);
+	printf("essid_crc  = 0x%02x (%3d)\n", essid_crc,  essid_crc);
+	printf("bssid_crc  = 0x%02x (%3d)\n", bssid_crc,  bssid_crc);
+	printf("essid_len  = 0x%02x (%3d)\n", essid_len,  essid_len);
 	printf("passwd_len = 0x%02x (%3d)\n", passwd_len, passwd_len);
-	printf("total_len  = 0x%02x (%3d)\n", total_len, total_len);
-	printf("total_xor  = 0x%02x (%3d)\n", total_xor, total_xor);
+	printf("total_len  = 0x%02x (%3d)\n", total_len,  total_len);
+	printf("total_xor  = 0x%02x (%3d)\n", total_xor,  total_xor);
 	#endif
 	
 	memset(datumcode, 0, DATUMCODE_MAX);
@@ -167,7 +167,7 @@ int make_datumcode(
 
 	n += tricode(total_len,  t++, datumcode + n, "total_len");  // 0
 	n += tricode(passwd_len, t++, datumcode + n, "passwd_len"); // 1
-	n += tricode(essid_crc, t++, datumcode + n, "essid_crc"); // 2
+	n += tricode(essid_crc,  t++, datumcode + n, "essid_crc"); // 2
 	n += tricode(bssid_crc,  t++, datumcode + n, "bssid_crc");  // 3
 	n += tricode(total_xor,  t++, datumcode + n, "total_xor");  // 4
 
@@ -266,7 +266,6 @@ void send_guidecode(void)
 void send_datumcode(const uint16_t* datumcode, int dc_len)
 {
 	eprintf("D");
-
 	unsigned long t_end = timestamp_ms() + DATACODE_TOTAL_MS;
 	
 	int i=0;
