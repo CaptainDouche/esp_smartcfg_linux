@@ -5,7 +5,7 @@ A command line version of the ESPTouch SmartConfig App (https://github.com/Espre
 
 Build:
 
-Build via `make`, then a subdirectory `bin` appears with the executeable `smartcfg`.
+Build via `make`, then a local subdirectory `./bin` appears with the executeable `smartcfg`.
 
 Usage:
 
@@ -20,8 +20,10 @@ smartcfg ...
 
 ```
 
-if `--essid`, `--bssid` and `--interface` is ommitted, then the locally connected Wifi is used.
-The `--password` must always be given.
+* If `--interface` is ommitted, then `wlan0` is assumed.  
+* If `--address` is ommitted, then the local address of the interface is used.  
+* If `--essid` and `--bssid` are ommitted, then the locally connected Wifi is used.  
+* The `--password` must always be given.  
 
 Example:
 
