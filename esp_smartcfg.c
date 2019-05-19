@@ -1,5 +1,7 @@
 #include "esp_smartcfg.h"
 
+#include "sockets.h"
+
 #if 1 // helpers
 
 #include <stdint.h>
@@ -11,20 +13,18 @@
 #elif (defined _LINUX)
 	#define delay_ms(MS)	usleep(1000 * MS)
 
-    #define _POSIX_C_SOURCE 200809L
-    #include <time.h>
+	#define _POSIX_C_SOURCE 200809L
+	#include <time.h>
 
-    unsigned long timestamp_ms(void)
-    {
-        struct timespec tp;
-        return clock_gettime(CLOCK_MONOTONIC, &tp) ? 0 :
-        //return clock_gettime(CLOCK_MONOTONIC_RAW, &tp) ? 0 :
-        (unsigned long)((tp.tv_sec * 1000) + (tp.tv_nsec / 1000000));
-    }
+	unsigned long timestamp_ms(void)
+	{
+		struct timespec tp;
+		return clock_gettime(CLOCK_MONOTONIC, &tp) ? 0 :
+		//return clock_gettime(CLOCK_MONOTONIC_RAW, &tp) ? 0 :
+		(unsigned long)((tp.tv_sec * 1000) + (tp.tv_nsec / 1000000));
+	}
 
 #endif
-
-#define eprintf(...)					fprintf (stderr, __VA_ARGS__)
 
 uint8_t _crc8_update(uint8_t crc, uint8_t data)
 {
@@ -67,149 +67,12 @@ uint8_t _xor_update_buf(uint8_t xor, const uint8_t* data, int len)
 #define MKBYTE(H, L)		((H << 4) | ((L) & 0x0f))
 #define MKINT16(H, L)		((H << 8) | ((L) & 0xff))
 
-#include <stdio.h>
-
-bool parse_ipstr(const char* str, uint8_t* ip)
-{
-	int n = sscanf(str, "%hhu.%hhu.%hhu.%hhu", ip+0, ip+1, ip+2, ip+3);
-	return (n == 4);
-}
-
-bool parse_macstr(const char* str, uint8_t* mac)
-{
-	int n = sscanf(str, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", mac+0, mac+1, mac+2, mac+3, mac+4, mac+5);
-	return (n == 6);
-}
-
 #endif // helpers
-
-#if 1 // sockets
-
-#if (defined _WIN32)
-	#include <Windows.h>
-	#include <winsock.h>
-	#include <winsock2.h>
-	// # pragma comment(lib, "wsock32.lib")
-	
-	typedef struct sockaddr 	sockaddr_t;
-	typedef struct sockaddr_in 	sockaddr_in_t;
-	typedef struct in_addr 		in_addr_t;
-	typedef int socklen_t;
-	
-#elif (defined _LINUX)
-	#include <sys/types.h>
-	#include <sys/socket.h>
-	#include <sys/select.h>
-	#include <unistd.h>
-	#include <netinet/in.h>
-	#include <netdb.h>
-	#include <arpa/inet.h>
-    #include <errno.h>
-    #include <string.h>
-	#include <fcntl.h>
-
-	typedef int SOCKET;
-	typedef struct sockaddr 	sockaddr_t;
-	typedef struct sockaddr_in	sockaddr_in_t;
-	//typedef struct in_addr 	in_addr_t;	
-	
-	#define closesocket(S)		close(S)
-    #define INVALID_SOCKET		-1
-#endif
-
-#include <stdio.h>
-
-void print_socketerror(const char* msg)
-{
-#if (defined _WIN32)
-	int e = WSAGetLastError();
-	char *s = NULL;
-	FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL,
-		e,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPTSTR)&s,
-		0,
-		NULL
-	);
-	eprintf("%s: %s (%d)\n", msg, s, e);
-	LocalFree(s);
-#elif (defined _LINUX)
-	int e = errno;
-	eprintf("%s: %s (%d)\n", msg, strerror(e), e);
-#endif
-}
-
-bool sockets_init(void)
-{
-    #if (defined _WIN32)
-		WSADATA wsaData;
-		WORD wVerReq	= MAKEWORD(1, 1);
-		WSAStartup(wVerReq, &wsaData);
-    #endif
-	return true;
-}
-
-void sockets_deinit(void)
-{
-	#if (defined _WIN32)
-		WSACleanup();
-    #endif
-}
-
-bool sockopt_broadcast(SOCKET sock)
-{
-	int yes=1;
-    int res = setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&yes, sizeof(yes));
-	if (res != 0)
-	{
-		print_socketerror("setsockopt(SO_BROADCAST)");
-		closesocket(sock);
-		return false;
-	}
-    return true;
-}
-
-bool sockopt_blocking(SOCKET sock, bool blocking)
-{
-	#if (defined _WIN32)
-		u_long flags = blocking ? 0 : 1;
-		bool res = (NO_ERROR == ioctlsocket(sock, FIONBIO, &flags));
-	#elif (defined _LINUX)
-		const int flags = fcntl(sock, F_GETFL, 0);
-		bool res = (0 == fcntl(sock, F_SETFL, blocking ? flags ^ O_NONBLOCK : flags | O_NONBLOCK));
-	#endif
-	
-	if (!res)
-	{
-		print_socketerror("sockopt_blocking");
-	}
-	
-	return res;
-}
-
-SOCKET _udpsock(void)
-{
-	SOCKET sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-	if (sock == INVALID_SOCKET)
-	{
-		print_socketerror("socket() failed");
-		return INVALID_SOCKET;
-	}
-
-	return sock;
-}
-
-#endif
 
 #define TOTAL_TIMEOUT_MS			45000
 #define DEBUG_ENODING				0
 
 // dont change these:
-#define MAC_LEN						6
-#define IPADDR_LEN					4
 #define PACKET_MAX					1500
 #define DATUMCODE_MAX				105
 
@@ -231,7 +94,7 @@ SOCKET rxsock = INVALID_SOCKET;
 
 int send_sized(int size)
 {
-    int n = sendto(txsock, packet, size, 0, (sockaddr_t*)(&txaddr), sizeof(sockaddr_in_t));
+	int n = sendto(txsock, packet, size, 0, (sockaddr_t*)(&txaddr), sizeof(sockaddr_in_t));
 }
 
 #include <string.h>
@@ -243,7 +106,7 @@ int esp_tricode(uint8_t data, uint8_t index, uint16_t* tricode, const char* comm
 	crc = _crc8_update(crc, index);
 
 	tricode[0] = MKINT16(0x00, MKBYTE(HINIB(crc), HINIB(data)));
-	tricode[1] = MKINT16(0x01,                           index);
+	tricode[1] = MKINT16(0x01,						   index);
 	tricode[2] = MKINT16(0x00, MKBYTE(LONIB(crc), LONIB(data)));
 
 	#if (DEBUG_ENODING)
@@ -256,7 +119,7 @@ int esp_tricode(uint8_t data, uint8_t index, uint16_t* tricode, const char* comm
 
 int esp_make_datumcode(
 	uint16_t* datumcode, // must be sized at least DATUMCODE_MAX!
-	const char* apssid_str,
+	const char* essid_str,
 	const char* bssid_str,
 	const char* passwd_str,
 	const char* ownaddr_str,
@@ -265,7 +128,7 @@ int esp_make_datumcode(
 {
 	#if (DEBUG_ENODING)
 	printf("------------------------------\n");
-	printf("ESSID    = \"%s\"\n", apssid_str);
+	printf("ESSID    = \"%s\"\n", essid_str);
 	printf("BSSID    = %s\n", bssid_str);
 	printf("Password = \"%s\"\n", passwd_str);
 	printf("Ip-Addr  = %s\n", ownaddr_str);
@@ -280,11 +143,11 @@ int esp_make_datumcode(
 	uint8_t ownaddr_bytes[IPADDR_LEN];
 	parse_ipstr(ownaddr_str, ownaddr_bytes);
 
-    // apssid_str and passwd_str could be encrypted here, using "AES/ECB/PKCS5Padding"
+	// essid_str and passwd_str could be encrypted here, using "AES/ECB/PKCS5Padding"
 	// nice small AES implementation: https://github.com/kokke/tiny-AES-c/
 
-	uint8_t apssid_len	= strlen(apssid_str);
-	uint8_t apssid_crc	= _crc8_update_buf(0x00, apssid_str, apssid_len);
+	uint8_t essid_len	= strlen(essid_str);
+	uint8_t essid_crc	= _crc8_update_buf(0x00, essid_str, essid_len);
 
 	uint8_t bssid_crc	= _crc8_update_buf(0x00, bssid_bytes, MAC_LEN);
 	uint8_t passwd_len	= strlen(passwd_str);
@@ -292,26 +155,26 @@ int esp_make_datumcode(
 	uint8_t total_len	=
 		sizeof(total_len ) +
 		sizeof(passwd_len) +
-		sizeof(apssid_crc) +
+		sizeof(essid_crc) +
 		sizeof(bssid_crc ) +
 		sizeof(total_xor ) +
 		IPADDR_LEN +
 		passwd_len +
-		apssid_len;
+		essid_len;
 
 	total_xor  = 0x00;
 	total_xor ^= total_len;	
 	total_xor ^= passwd_len;
-	total_xor ^= apssid_crc;
+	total_xor ^= essid_crc;
 	total_xor ^= bssid_crc;
 	total_xor = _xor_update_buf(total_xor, ownaddr_bytes, IPADDR_LEN);
 	total_xor = _xor_update_buf(total_xor, passwd_str, passwd_len);
-	total_xor = _xor_update_buf(total_xor, apssid_str, apssid_len);	
+	total_xor = _xor_update_buf(total_xor, essid_str, essid_len);	
 
 	#if (DEBUG_ENODING)
-	printf("apssid_crc = 0x%02x (%3d)\n", apssid_crc, apssid_crc);
+	printf("essid_crc = 0x%02x (%3d)\n", essid_crc, essid_crc);
 	printf("bssid_crc  = 0x%02x (%3d)\n", bssid_crc, bssid_crc);
-	printf("apssid_len = 0x%02x (%3d)\n", apssid_len, apssid_len);
+	printf("essid_len = 0x%02x (%3d)\n", essid_len, essid_len);
 	printf("passwd_len = 0x%02x (%3d)\n", passwd_len, passwd_len);
 	printf("total_len  = 0x%02x (%3d)\n", total_len, total_len);
 	printf("total_xor  = 0x%02x (%3d)\n", total_xor, total_xor);
@@ -324,7 +187,7 @@ int esp_make_datumcode(
 
 	n += esp_tricode(total_len,  t++, datumcode + n, "total_len");  // 0
 	n += esp_tricode(passwd_len, t++, datumcode + n, "passwd_len"); // 1
-	n += esp_tricode(apssid_crc, t++, datumcode + n, "apssid_crc"); // 2
+	n += esp_tricode(essid_crc, t++, datumcode + n, "essid_crc"); // 2
 	n += esp_tricode(bssid_crc,  t++, datumcode + n, "bssid_crc");  // 3
 	n += esp_tricode(total_xor,  t++, datumcode + n, "total_xor");  // 4
 
@@ -340,9 +203,9 @@ int esp_make_datumcode(
 
 	if (ishidden)
 	{
-		for (int i=0; i<apssid_len; i++)
+		for (int i=0; i<essid_len; i++)
 		{
-			n += esp_tricode(apssid_str[i], t++, datumcode + n, "apssid");
+			n += esp_tricode(essid_str[i], t++, datumcode + n, "essid");
 		}
 	}
 
@@ -373,16 +236,16 @@ bool esp_peek_reply(void)
 
 		if (rxlen == (sizeof(char) + MAC_LEN + IPADDR_LEN))
 		{
-			// expecting here: buf[0] == strlen(apssid_str) + strlen(passwd_str)
+			// expecting here: buf[0] == strlen(essid_str) + strlen(passwd_str)
 
-            const uint8_t* mac = buf + 1;
-            const uint8_t* ip  = mac + MAC_LEN;
+			const uint8_t* mac = buf + 1;
+			const uint8_t* ip  = mac + MAC_LEN;
 
-            printf("- IP:  %hhu.%hhu.%hhu.%hhu \n", ip[0], ip[1], ip[2], ip[3]);
-            printf("- MAC: %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx \n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+			printf("- IP:  %hhu.%hhu.%hhu.%hhu \n", ip[0], ip[1], ip[2], ip[3]);
+			printf("- MAC: %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx \n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-            run = false;
-            return true;
+			run = false;
+			return true;
 		}
 	}
 
@@ -425,33 +288,27 @@ void esp_send_datumcode(const uint16_t* datumcode, int dc_len)
 		if (i == dc_len)
 		{
 			i = 0;
-            esp_peek_reply();
+			esp_peek_reply();
 		}
 	}
 }
 
-bool esp_smartcfg_init(const char* localaddr_str)
+bool esp_smartcfg_init(void)
 {
 	printf("smartcfg_init ...\n");
 
 	memset(packet, '1', sizeof(packet));
 	sockets_init();
 	
-	txsock = _udpsock();
+	txsock = udpsock();
 	sockopt_broadcast(txsock);
-	memset(&txaddr, 0, sizeof(struct sockaddr_in));
-	txaddr.sin_family = AF_INET;
-	txaddr.sin_port	= htons(SMARTCFG_UDP_TX_PORT);
-	txaddr.sin_addr.s_addr = INADDR_BROADCAST;
+	setup_addr_in_broadcast(&txaddr, SMARTCFG_UDP_TX_PORT);
 
-	rxsock = _udpsock();
+	rxsock = udpsock();
 	sockaddr_in_t localaddr;
-	memset(&localaddr, 0, sizeof(localaddr));
-	localaddr.sin_family		= AF_INET;
-	localaddr.sin_addr.s_addr	= INADDR_ANY; // inet_addr(localaddr_str);
-	localaddr.sin_port			= htons(SMARTCFG_UDP_RX_PORT);
+	setup_addr_in_any(&localaddr, SMARTCFG_UDP_RX_PORT);
+	
 
-	// bind to the local address
 	if (bind(rxsock, (struct sockaddr *) &localaddr, sizeof(localaddr)) != 0)
 	{
 		print_socketerror("bind()");
@@ -459,7 +316,7 @@ bool esp_smartcfg_init(const char* localaddr_str)
 	}
 	else
 	{
-		printf("socket bound to: %s:%u\n", inet_ntoa(localaddr.sin_addr), ntohs(localaddr.sin_port));
+		printf("receiving socket bound to: %s:%u\n", inet_ntoa(localaddr.sin_addr), ntohs(localaddr.sin_port));
 	}
 
 	sockopt_blocking(rxsock, false);
@@ -481,25 +338,28 @@ void esp_smartcfg_deinit(void)
 }
 
 void esp_smartcfg_run(
-	const char* apssid_str,
+	const char* essid_str,
 	const char* bssid_str,
 	const char* passwd_str,
-	const char* ownaddr_str, // todo: eliminate this parameter: get own ip addr on interface wlan0
-	bool ishidden)
+	const char* ownaddr_str,
+	bool ishidden,
+	int timeout)
 {
-	esp_smartcfg_init(ownaddr_str);
+	esp_smartcfg_init();
 
 	uint16_t datumcode[DATUMCODE_MAX];
-	int dc_len = esp_make_datumcode(datumcode, apssid_str, bssid_str, passwd_str, ownaddr_str, ishidden);
+	int dc_len = esp_make_datumcode(datumcode, essid_str, bssid_str, passwd_str, ownaddr_str, ishidden);
 
-	unsigned long t_end = timestamp_ms() + TOTAL_TIMEOUT_MS;
+	unsigned long t_end = timestamp_ms() + (1000 * timeout);
 
-    eprintf("Sending Packets: ");
+	eprintf("sending packets: ");
 
-	while (run && (timestamp_ms() < t_end))
+	while ((timeout == 0) || (timestamp_ms() < t_end))
 	{
 		esp_send_guidecode();
+		if (!run) break;
 		esp_send_datumcode(datumcode, dc_len);
+		if (!run) break;
 	}
 
 	esp_smartcfg_deinit();

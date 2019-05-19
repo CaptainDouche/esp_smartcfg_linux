@@ -11,10 +11,11 @@
 // $ sudo ifconfig
 
 void esp_smartcfg_run(
-	const char* apssid_str,
+	const char* essid_str,
 	const char* bssid_str,
 	const char* passwd_str,
-	const char* ownaddr_str, // todo: eliminate this parameter: get own ip addr on interface wlan0
-	bool ishidden);
+	const char* ownaddr_str,
+	bool ishidden,
+	int timeout);
 
 #endif // #ifndef SMARTCFG_H
