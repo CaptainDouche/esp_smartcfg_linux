@@ -10,20 +10,32 @@ Build via `make`, then a subdirectory `bin` appears with the executeable `smartc
 Usage:
 
 ```
-pi@raspiz1% ./bin/smartcfg "MyWifName" "9c:c7:a6:9c:f7:84" "MySecretPassword" `hostname -I`
-./bin/smartcfg begin...
-smartcfg_init ...
-socket bound to: 0.0.0.0:18266
-Sending Packets: GDGDGDG
-recvd 11 bytes from 192.168.0.145.
-- IP:  192.168.0.145
-- MAC: a0:20:a6:14:e5:04
-D
-smartcfg_deinit ...
+smartcfg ...
+  [-essid ESSID]
+  [-bssid BSSID]
+  -password PASSWORD
+  [ (-interface INTERFACENAME) | (-address LOCALADDRESS) ]
+  [ (-timeout TIMEOUT) | -infinite ]
+  [-hidden | -visible]
 
-./bin/smartcfg end.
 ```
 
-ToDos:
+if `-essid`, `-bssid` and `-interface` is ommitted, then the locally connected Wifi is used.
 
-Use the own SSID, IP-Address instead of expecting it from the command line.
+```
+pi@raspiz1:foo/raspi/smartcfg (1) % make && ./bin/smartcfg -p "34234673423423"
+./bin/smartcfg: done
+./bin/smartcfg, ver: May 19 2019/15:20:49 ...
+using local interface wlan0 address 192.168.0.141
+using ssid MyWifiName (9c:c7:a6:9c:f7:84)
+smartcfg_init ...
+receiving socket bound to: 0.0.0.0:18266
+sending packets: GDGDGDGDGDGD
+recvd 11 bytes from 192.168.0.145
+- IP:  192.168.0.145
+- MAC: a0:20:a6:14:e5:04
+
+smartcfg_deinit ...
+./bin/smartcfg: done
+
+```
