@@ -22,9 +22,9 @@ smartcfg ...
 
 ```
 
-* If `--interface` is ommitted, then `wlan0` is assumed.  
-* If `--address` is ommitted, then the local address of the interface is used.  
-* If `--essid` and `--bssid` are ommitted, then the locally connected Wifi is used. You will typically _only_ provide these parameters, if you want to put your ESP into a _different_ wifi of the one, your Raspi is currently booked in. Of course this requires providing the correct password of this wifi.
+* If `--interface` is ommitted, then `wlan0` is assumed. (works only on linux)
+* If `--address` is ommitted, then the local address of the interface is used. (works only on linux)
+* If `--essid` and `--bssid` are ommitted, then the locally connected Wifi is used (works only on linux). You will typically _only_ provide these parameters, if you want to put your ESP into a _different_ wifi of the one, your Raspi is currently booked in. Of course this requires providing the correct password of this wifi.
 * The `--password` must always be given.  
 
 __Example:__
