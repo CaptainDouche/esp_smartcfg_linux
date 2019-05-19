@@ -1,14 +1,17 @@
-A command line version of the ESPTouch SmartConfig App (https://github.com/EspressifApp/EsptouchForAndroid).
-* Tested on Raspberry.
-* Tested on Windows.
-* Implemented but not tested for hidden Wifis.
 
-Build:
+__About:__
+
+This is a command line version of the ESPTouch SmartConfig App (https://github.com/EspressifApp/EsptouchForAndroid).
+* Works on Raspberry.
+* Works on Windows.
+* Implemented but not tested for hidden Wifis.
+* AES is not implemented, however it is uncertain how that is used at all - i cant figure out from the App's source where the AES-key is handled.
+
+__Build:__
 
 Build via `make`, then a local subdirectory `./bin` appears with the executeable `smartcfg`.
 
-Usage:
-
+__Usage:__
 ```
 smartcfg ...
   [--essid ESSID]
@@ -25,8 +28,7 @@ smartcfg ...
 * If `--essid` and `--bssid` are ommitted, then the locally connected Wifi is used.  
 * The `--password` must always be given.  
 
-Example:
-
+__Example:__
 ```
 pi@raspiz1% ./bin/smartcfg --password "34234673423423"
 ./bin/smartcfg, ver: May 19 2019/15:20:49 ...
