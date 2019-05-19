@@ -12,7 +12,7 @@
 	#include <winsock2.h>
 	// # pragma comment(lib, "wsock32.lib")
 #elif (defined _LINUX)
-	#define _GNU_SOURCE     /* To get defns of NI_MAXSERV and NI_MAXHOST */	
+	#define _GNU_SOURCE /* To get defns of NI_MAXSERV and NI_MAXHOST */	
 	#include <sys/types.h>
 	#include <sys/socket.h>
 	#include <sys/select.h>
@@ -20,12 +20,11 @@
 	#include <netinet/in.h>
 	#include <errno.h>
 	#include <fcntl.h>
-
 	#include <arpa/inet.h>
-	#include <sys/socket.h>
 	#include <netdb.h>
 	#include <ifaddrs.h>
 	#include <linux/if_link.h>
+	#include <linux/wireless.h>
 #endif
 
 bool parse_ipstr(const char* str, uint8_t* ip)
@@ -70,38 +69,11 @@ void print_socketerror(const char* msg)
 #endif
 }
 
-int XXXdump_own_addrs(void)
-{
-	char name[HOSTNAME_MAX + 1];
-
-	if (gethostname(name, sizeof(name)) == 0)
-	{
-		int i = 0;
-		struct hostent* hostinfo;
-
-		printf("IP addresses of %s:\n", name);
-
-		if ((hostinfo = gethostbyname(name)) != NULL)
-		{
-			while (hostinfo->h_addr_list[i])
-			{
-				char* ip = inet_ntoa(*(struct in_addr *)hostinfo->h_addr_list[i]);
-				printf("%s\n", ip);
-				i++;
-			}
-		}
-		
-		return i;
-	}
-	else
-	{
-		print_socketerror("gethostname()");
-		return -1;
-	}
-}
-
 int get_ifc_addr(const char* ifname, char* ipstr)
 {
+#if (defined _WIN32)
+	// TODO ...
+#elif (defined _LINUX)
 	// http://man7.org/linux/man-pages/man3/getifaddrs.3.html
 	*ipstr = '\0';
 	
@@ -138,11 +110,39 @@ int get_ifc_addr(const char* ifname, char* ipstr)
 	freeifaddrs(ifaddr);
 	
 	return res;
+#endif
 }
-		
 
 int dump_own_addrs(void)
 {
+#if (defined _WIN32)
+	char name[HOSTNAME_MAX + 1];
+
+	if (gethostname(name, sizeof(name)) == 0)
+	{
+		int i = 0;
+		struct hostent* hostinfo;
+
+		printf("IP addresses of %s:\n", name);
+
+		if ((hostinfo = gethostbyname(name)) != NULL)
+		{
+			while (hostinfo->h_addr_list[i])
+			{
+				char* ip = inet_ntoa(*(struct in_addr *)hostinfo->h_addr_list[i]);
+				printf("%s\n", ip);
+				i++;
+			}
+		}
+		
+		return i;
+	}
+	else
+	{
+		print_socketerror("gethostname()");
+		return -1;
+	}
+#elif (defined _LINUX)
 	// http://man7.org/linux/man-pages/man3/getifaddrs.3.html
 	
 	struct ifaddrs *ifaddr, *ifa;
@@ -188,30 +188,31 @@ int dump_own_addrs(void)
 	freeifaddrs(ifaddr);
 	
 	return 0;
+#endif	
 }
 
 
 bool sockets_init(void)
 {
-    #if (defined _WIN32)
-		WSADATA wsaData;
-		WORD wVerReq	= MAKEWORD(1, 1);
-		WSAStartup(wVerReq, &wsaData);
-    #endif
+#if (defined _WIN32)
+	WSADATA wsaData;
+	WORD wVerReq	= MAKEWORD(1, 1);
+	WSAStartup(wVerReq, &wsaData);
+#endif
 	return true;
 }
 
 void sockets_deinit(void)
 {
-	#if (defined _WIN32)
-		WSACleanup();
-    #endif
+#if (defined _WIN32)
+	WSACleanup();
+#endif
 }
 
 bool sockopt_broadcast(SOCKET sock)
 {
 	int yes=1;
-    int res = setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&yes, sizeof(yes));
+	int res = setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&yes, sizeof(yes));
 	if (res != 0)
 	{
 		print_socketerror("setsockopt(SO_BROADCAST)");
@@ -223,13 +224,13 @@ bool sockopt_broadcast(SOCKET sock)
 
 bool sockopt_blocking(SOCKET sock, bool blocking)
 {
-	#if (defined _WIN32)
-		u_long flags = blocking ? 0 : 1;
-		bool res = (NO_ERROR == ioctlsocket(sock, FIONBIO, &flags));
-	#elif (defined _LINUX)
-		const int flags = fcntl(sock, F_GETFL, 0);
-		bool res = (0 == fcntl(sock, F_SETFL, blocking ? flags ^ O_NONBLOCK : flags | O_NONBLOCK));
-	#endif
+#if (defined _WIN32)
+	u_long flags = blocking ? 0 : 1;
+	bool res = (NO_ERROR == ioctlsocket(sock, FIONBIO, &flags));
+#elif (defined _LINUX)
+	const int flags = fcntl(sock, F_GETFL, 0);
+	bool res = (0 == fcntl(sock, F_SETFL, blocking ? flags ^ O_NONBLOCK : flags | O_NONBLOCK));
+#endif
 	
 	if (!res)
 	{
@@ -252,11 +253,11 @@ SOCKET udpsock(void)
 	return sock;
 }
 
-
-#include <linux/wireless.h>
-
 int wifi_get_ssid(const char* ifname, char* essid, uint8_t* bssid)
 {
+#if (defined _WIN32)
+	// TODO ...
+#elif (defined _LINUX)
 	int res = -1;
 	struct iwreq req;
 	strncpy(req.ifr_ifrn.ifrn_name, ifname, IFNAMSIZ);
@@ -300,4 +301,6 @@ int wifi_get_ssid(const char* ifname, char* essid, uint8_t* bssid)
 	
 	free(buffer);
 	return res;
+#endif	
 }
+

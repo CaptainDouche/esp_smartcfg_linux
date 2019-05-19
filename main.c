@@ -40,13 +40,22 @@ void onsignal(int signum)
 void usage(const char* progname)
 {
 	printf("Usage: %s ...\n", progname);
-	printf("  --essid ESSID \n");
+#if (defined _WIN32)
+	printf("  --essid ESSID\n");
 	printf("  --bssid BSSID\n");
+	printf("  --password PASSWORD\n");
+	printf("  --address LOCALADDRESS)\n");
+	printf("  [ (--timeout TIMEOUT) | --infinite ]\n");
+	printf("  [--hidden | --visible] \n");
+#elif (defined _LINUX)
+	printf("  [ --essid ESSID ]\n");
+	printf("  [ --bssid BSSID ]\n");
 	printf("  --password PASSWORD\n");
 	printf("  [ (--interface INTERFACENAME) | (--address LOCALADDRESS) ]\n");
 	printf("  [ (--timeout TIMEOUT) | --infinite ]\n");
-	printf("  [--hidden | --visible] \n");
-	
+	printf("  [--hidden | --visible ] \n");	
+#endif
+
 	//dump_own_addrs();
 	printf("Version: " COMPILE_TIMESTAMP " \n");
 }
@@ -134,7 +143,7 @@ int main(int argc, char* argv[])
 	signal(SIGINT,  onsignal);
 	signal(SIGTERM, onsignal);
 	
-	
+#if (defined _LINUX)
 	if (ownaddr == NULL)
 	{
 		static char ownaddr_buf[sizeof("111.222.333.444") + 1] = "";
@@ -164,6 +173,7 @@ int main(int argc, char* argv[])
 		
 		printf("using ssid %s (%s)\n", essid, bssid);
 	}
+#endif
 
 	esp_smartcfg_run(essid, bssid, passwd, ownaddr, hidden, timeout);
 	

@@ -81,8 +81,8 @@ uint8_t _xor_update_buf(uint8_t xor, const uint8_t* data, int len)
 #define DATACODE_TOTAL_MS 			4000
 #define DATACODE_DLY_MS				8
 
-#define SMARTCFG_UDP_TX_PORT	   7001
-#define SMARTCFG_UDP_RX_PORT	   18266
+#define SMARTCFG_UDP_TX_PORT		7001
+#define SMARTCFG_UDP_RX_PORT		18266
 
 extern volatile bool run;
 
@@ -106,7 +106,7 @@ int esp_tricode(uint8_t data, uint8_t index, uint16_t* tricode, const char* comm
 	crc = _crc8_update(crc, index);
 
 	tricode[0] = MKINT16(0x00, MKBYTE(HINIB(crc), HINIB(data)));
-	tricode[1] = MKINT16(0x01,						   index);
+	tricode[1] = MKINT16(0x01, index);
 	tricode[2] = MKINT16(0x00, MKBYTE(LONIB(crc), LONIB(data)));
 
 	#if (DEBUG_ENODING)
