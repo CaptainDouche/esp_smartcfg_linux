@@ -79,7 +79,7 @@ uint8_t _xor_update_buf(uint8_t xor, const uint8_t* data, int len)
 #define MKBYTE(H, L)				((H << 4) | ((L) & 0x0f))
 #define MKINT16(H, L)				((H << 8) | ((L) & 0xff))
 
-int esp_tricode(uint8_t data, uint8_t index, uint16_t* tricode, const char* comment)
+int tricode(uint8_t data, uint8_t index, uint16_t* tricode, const char* comment)
 {
 	uint8_t crc = 0x00;
 	crc = _crc8_update(crc, data);
@@ -97,7 +97,7 @@ int esp_tricode(uint8_t data, uint8_t index, uint16_t* tricode, const char* comm
 	return 3;
 }
 
-int esp_make_datumcode(
+int make_datumcode(
 	uint16_t* datumcode, // must be sized at least DATUMCODE_MAX!
 	const char* essid_str,
 	const char* bssid_str,
@@ -165,33 +165,33 @@ int esp_make_datumcode(
 	int n = 0; // datacode index
 	int t = 0; // tricode index
 
-	n += esp_tricode(total_len,  t++, datumcode + n, "total_len");  // 0
-	n += esp_tricode(passwd_len, t++, datumcode + n, "passwd_len"); // 1
-	n += esp_tricode(essid_crc, t++, datumcode + n, "essid_crc"); // 2
-	n += esp_tricode(bssid_crc,  t++, datumcode + n, "bssid_crc");  // 3
-	n += esp_tricode(total_xor,  t++, datumcode + n, "total_xor");  // 4
+	n += tricode(total_len,  t++, datumcode + n, "total_len");  // 0
+	n += tricode(passwd_len, t++, datumcode + n, "passwd_len"); // 1
+	n += tricode(essid_crc, t++, datumcode + n, "essid_crc"); // 2
+	n += tricode(bssid_crc,  t++, datumcode + n, "bssid_crc");  // 3
+	n += tricode(total_xor,  t++, datumcode + n, "total_xor");  // 4
 
 	for (int i=0; i<IPADDR_LEN; i++)
 	{
-		n += esp_tricode(ownaddr_bytes[i], t++, datumcode + n, "ipaddr");
+		n += tricode(ownaddr_bytes[i], t++, datumcode + n, "ipaddr");
 	}
 	
 	for (int i=0; i<passwd_len; i++)
 	{
-		n += esp_tricode(passwd_str[i], t++, datumcode + n, "ap_pwd");
+		n += tricode(passwd_str[i], t++, datumcode + n, "ap_pwd");
 	}
 
 	if (ishidden)
 	{
 		for (int i=0; i<essid_len; i++)
 		{
-			n += esp_tricode(essid_str[i], t++, datumcode + n, "essid");
+			n += tricode(essid_str[i], t++, datumcode + n, "essid");
 		}
 	}
 
 	for (int i=0; i<MAC_LEN; i++)
 	{
-		n += esp_tricode(bssid_bytes[i], t++, datumcode + n, "bssid");
+		n += tricode(bssid_bytes[i], t++, datumcode + n, "bssid");
 	}
 
 	#if (DEBUG_ENCODING)
@@ -213,7 +213,7 @@ int send_sized(int size)
 	int n = sendto(txsock, packet, size, 0, (sockaddr_t*)(&txaddr), sizeof(sockaddr_in_t));
 }
 
-bool esp_peek_reply(void)
+bool peek_reply(void)
 {
 	struct sockaddr_in remoteaddr;
 	socklen_t addrlen = sizeof(remoteaddr);
@@ -243,7 +243,7 @@ bool esp_peek_reply(void)
 	return false;
 }
 
-void esp_send_guidecode(void)
+void send_guidecode(void)
 {
 	eprintf("G");
 	unsigned long t_end = timestamp_ms() + GUIDECODE_TOTAL_MS;
@@ -259,11 +259,11 @@ void esp_send_guidecode(void)
 		send_sized(512);
 		delay_ms(GUIDECODE_DLY_MS);
 
-		esp_peek_reply();
+		peek_reply();
 	}
 }
 
-void esp_send_datumcode(const uint16_t* datumcode, int dc_len)
+void send_datumcode(const uint16_t* datumcode, int dc_len)
 {
 	eprintf("D");
 
@@ -279,7 +279,7 @@ void esp_send_datumcode(const uint16_t* datumcode, int dc_len)
 		if (i == dc_len)
 		{
 			i = 0;
-			esp_peek_reply();
+			peek_reply();
 		}
 	}
 }
@@ -338,7 +338,7 @@ void esp_smartcfg_run(
 	esp_smartcfg_init();
 
 	uint16_t datumcode[DATUMCODE_MAX];
-	int dc_len = esp_make_datumcode(datumcode, essid_str, bssid_str, passwd_str, ownaddr_str, ishidden);
+	int dc_len = make_datumcode(datumcode, essid_str, bssid_str, passwd_str, ownaddr_str, ishidden);
 
 	unsigned long t_end = timestamp_ms() + (1000 * timeout);
 
@@ -346,9 +346,9 @@ void esp_smartcfg_run(
 
 	while ((timeout == 0) || (timestamp_ms() < t_end))
 	{
-		esp_send_guidecode();
+		send_guidecode();
 		if (!run) break;
-		esp_send_datumcode(datumcode, dc_len);
+		send_datumcode(datumcode, dc_len);
 		if (!run) break;
 	}
 
