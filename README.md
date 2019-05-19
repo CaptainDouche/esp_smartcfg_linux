@@ -14,12 +14,12 @@ Build via `make`, then a local subdirectory `./bin` appears with the executeable
 __Usage:__
 ```
 smartcfg ...
-  [--essid ESSID]
-  [--bssid BSSID]
+  [ --essid ESSID ]
+  [ --bssid BSSID ]
   --password PASSWORD
   [ (--interface INTERFACENAME) | (--address LOCALADDRESS) ]
   [ (--timeout TIMEOUT) | --infinite ]
-  [-hidden | -visible]
+  [ --hidden | --visible ]
 
 ```
 
