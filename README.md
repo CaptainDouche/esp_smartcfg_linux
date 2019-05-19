@@ -1,6 +1,7 @@
 __About:__
 
-This is a command line version of the ESPTouch SmartConfig App (https://github.com/EspressifApp/EsptouchForAndroid).
+This is a command line version of the ESPTouch SmartConfig App (https://github.com/EspressifApp/EsptouchForAndroid) written in C.
+Completely stand-alone implementation without any dependencies to external libraries, especially from the original App.
 * Works on Raspberry.
 * Works on Windows.
 * Implemented but not tested for hidden Wifis.
